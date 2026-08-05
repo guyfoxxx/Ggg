@@ -1,0 +1,64 @@
+name: Build Rahgosha
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+
+      - name: Install dependencies
+        run: npm install
+
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        continue-on-error: true
+
+
+      - name: Build Next.js
+        run: npm run build
+
+
+      - name: Prepare release folder
+        run: |
+          mkdir release
+
+          cp -r .next release/
+          cp -r public release/ || true
+
+          cp package.json release/
+          cp next.config.* release/ || true
+
+          cp -r prisma release/ || true
+
+
+      - name: Create ZIP archive
+        run: |
+          cd release
+          zip -r ../rahgosha-build.zip .
+
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rahgosha-build
+          path: rahgosha-build.zip
+          retention-days: 30
