@@ -1,4 +1,4 @@
-name: Build and Package Rahgosha
+name: Build Static Rahgosha
 
 on:
   push:
@@ -11,39 +11,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install dependencies
+      - name: Install
         run: npm install
 
-      - name: Prisma Generate
-        run: npx prisma generate
-        continue-on-error: true
-
-      - name: Build Next.js
+      - name: Build Static
         run: npm run build
 
-      - name: Create hosting package
+      - name: Zip Output
         run: |
-          mkdir upload
+          cd out
+          zip -r ../rahgosha-static.zip .
 
-          cp -r .next upload/
-          cp -r public upload/ || true
-          cp -r prisma upload/ || true
-
-          cp package.json upload/
-          cp next.config.* upload/ || true
-
-          zip -r rahgosha-host.zip upload
-
-      - name: Save ZIP Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rahgosha-host
-          path: rahgosha-host.zip
+          name: rahgosha-static
+          path: rahgosha-static.zip
