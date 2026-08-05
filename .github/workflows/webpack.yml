@@ -1,28 +1,49 @@
-name: NodeJS with Webpack
+name: Build and Package Rahgosha
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-    - name: Build
-      run: |
-        npm install
-        npx webpack
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prisma Generate
+        run: npx prisma generate
+        continue-on-error: true
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Create hosting package
+        run: |
+          mkdir upload
+
+          cp -r .next upload/
+          cp -r public upload/ || true
+          cp -r prisma upload/ || true
+
+          cp package.json upload/
+          cp next.config.* upload/ || true
+
+          zip -r rahgosha-host.zip upload
+
+      - name: Save ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rahgosha-host
+          path: rahgosha-host.zip
